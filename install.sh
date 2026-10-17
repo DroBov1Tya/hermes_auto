@@ -34,6 +34,16 @@ sha256_file() {
   else die "Install sha256sum or shasum to verify the PentaCore archive"; fi
 }
 
+# curl | bash leaves stdin attached to the curl pipe. Reopen the terminal
+# before doing any work so prompts are visible and answers go to the TTY.
+if [[ ! -t 0 || ! -t 1 ]]; then
+  if [[ -r /dev/tty && -w /dev/tty ]]; then
+    exec </dev/tty >/dev/tty
+  else
+    die "Interactive terminal required. Start this command from a terminal."
+  fi
+fi
+
 if [[ -n "${BASH_SOURCE[0]:-}" && -f "${BASH_SOURCE[0]}" ]]; then
   SOURCE_ROOT="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
 else
@@ -41,14 +51,6 @@ else
   TEMP_ROOT="$(mktemp -d "${TMPDIR:-/tmp}/hermes-setup.XXXXXX")"
   SOURCE_ROOT="$TEMP_ROOT/source"
   run git clone --depth 1 --branch "$REPO_REF" "$REPO_URL" "$SOURCE_ROOT"
-fi
-
-if [[ ! -t 0 || ! -t 1 ]]; then
-  if [[ -r /dev/tty && -w /dev/tty ]]; then
-    exec </dev/tty >/dev/tty
-  else
-    die "Interactive terminal required. Start this command from a terminal."
-  fi
 fi
 
 ask_yes_no() {

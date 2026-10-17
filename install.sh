@@ -34,11 +34,11 @@ sha256_file() {
   else die "Install sha256sum or shasum to verify the PentaCore archive"; fi
 }
 
-# curl | bash leaves stdin attached to the curl pipe. Reopen the terminal
-# before doing any work so prompts are visible and answers go to the TTY.
+# curl | bash leaves stdin attached to the curl pipe. Read answers from the
+# terminal, but keep stdout on its original stream so the menu stays visible.
 if [[ ! -t 0 || ! -t 1 ]]; then
   if [[ -r /dev/tty && -w /dev/tty ]]; then
-    exec </dev/tty >/dev/tty
+    exec </dev/tty
   else
     die "Interactive terminal required. Start this command from a terminal."
   fi

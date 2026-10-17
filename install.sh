@@ -34,7 +34,11 @@ sha256_file() {
   else die "Install sha256sum or shasum to verify the PentaCore archive"; fi
 }
 
-    exec </dev/tty
+# Keep Bash's stdin attached to the script when invoked through curl | bash.
+# Individual read calls below use /dev/tty so they cannot replace the script
+# stream or accidentally make Bash wait for more shell code from the user.
+[[ -r /dev/tty && -w /dev/tty ]] || die "Interactive terminal required. Start this command from a terminal."
+
 if [[ -n "${BASH_SOURCE[0]:-}" && -f "${BASH_SOURCE[0]}" ]]; then
   SOURCE_ROOT="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
 else
@@ -49,7 +53,7 @@ ask_yes_no() {
   [[ "$default" == yes ]] && suffix='[Y/n]' || suffix='[y/N]'
   while true; do
     printf '%s %s ' "$prompt" "$suffix"
-    IFS= read -r answer
+    IFS= read -r answer </dev/tty || die "Could not read a menu answer from /dev/tty"
     answer="$(printf '%s' "$answer" | tr '[:upper:]' '[:lower:]')"
     if [[ -z "$answer" ]]; then [[ "$default" == yes ]]; return; fi
     case "$answer" in y|yes|д|да) return 0 ;; n|no|н|нет) return 1 ;; *) printf 'Enter y or n.\n' ;; esac
@@ -63,7 +67,7 @@ select_item() {
 }
 
 printf '\nHermes security profile installer\nProfile name [%s]: ' "$PROFILE"
-IFS= read -r profile_answer
+IFS= read -r profile_answer </dev/tty || die "Could not read the profile name from /dev/tty"
 if [[ -n "$profile_answer" ]]; then PROFILE="$profile_answer"; fi
 [[ "$PROFILE" =~ ^[A-Za-z0-9][A-Za-z0-9_-]{0,31}$ ]] || die "Profile name must be 1-32 ASCII letters, digits, '_' or '-'."
 
